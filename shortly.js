@@ -2,6 +2,7 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
+var cookieParser = require('cookie-parser');
 
 
 var db = require('./app/config');
@@ -18,10 +19,28 @@ app.set('view engine', 'ejs');
 app.use(partials());
 // Parse JSON (uniform resource locators)
 app.use(bodyParser.json());
+
+//Cookie parser
+app.use(cookieParser());
+app.use(function(req, res, next) {
+  var cookie = req.cookies.shortly;
+  if(cookie === undefined) {
+    var randomNumber = Math.random().toString();
+    randomNumber = randomNumber.substring(2, randomNumber.length);
+    //The duration of the cookie is set below; null means cookie will only
+    //expire when browser is closed; else it should be the number of seconds
+    res.cookie('shortly',randomNumber, { maxAge: null, httpOnly: true });
+    console.log('Cookie created successfully!');
+  }
+  else {
+    console.log('Cookie already exists', cookie);
+  }
+  next();
+});
+
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
-
 
 app.get('/', 
 function(req, res) {
@@ -76,7 +95,30 @@ function(req, res) {
 // Write your authentication routes here
 /************************************************************/
 
+app.get('/login',
+function(req, res) {
+  res.render('login');
+});
 
+app.post('/login',
+function(req, res) {
+  var username = res.body.username;
+  var password = res.body.password;
+  new User({'username': username, 'password': password})
+    .fetch()
+    .then(function(found) {
+      if(found) {
+        req.session.regenerate(function(){
+          req.session.user = username;
+          res.redirect('/restricted');
+        });
+      }
+      else {
+
+      }
+    });
+
+});
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
