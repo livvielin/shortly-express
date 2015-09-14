@@ -1,6 +1,7 @@
 var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
+var session = require('express-session');
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 
@@ -20,27 +21,42 @@ app.use(partials());
 // Parse JSON (uniform resource locators)
 app.use(bodyParser.json());
 
+
 //Cookie parser
-app.use(cookieParser());
-app.use(function(req, res, next) {
-  var cookie = req.cookies.shortly;
-  if(cookie === undefined) {
-    var randomNumber = Math.random().toString();
-    randomNumber = randomNumber.substring(2, randomNumber.length);
-    //The duration of the cookie is set below; null means cookie will only
-    //expire when browser is closed; else it should be the number of seconds
-    res.cookie('shortly',randomNumber, { maxAge: null, httpOnly: true });
-    console.log('Cookie created successfully!');
-  }
-  else {
-    console.log('Cookie already exists', cookie);
-  }
-  next();
-});
+app.use(cookieParser('test secret'));
+// app.use(function(req, res, next) {
+//   var cookie = req.cookies.shortly;
+//   if(cookie === undefined) {
+//     var randomNumber = Math.random().toFixed(10);
+//     randomNumber = randomNumber.substring(2, randomNumber.length);
+//     //The duration of the cookie is set below; null means cookie will only
+//     //expire when browser is closed; else it should be the number of seconds
+//     res.cookie('shortly', randomNumber, { maxAge: null, httpOnly: true });
+//     console.log('Cookie created successfully!');
+//   }
+//   else {
+//     console.log('Cookie already exists', cookie);
+//   }
+//   next();
+// });
 
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
+
+//Session checking
+app.use(session());
+app.use(function(req, res, next) {
+  if ( (req.url === '/login' || req.url === '/signup') || req.session.user) {
+    next();
+  }
+  else {
+    console.log('No session in memory.');
+    req.session.error = "Access denied; redirecting to login page.";
+    res.redirect('/login');
+  }
+});
+
 
 app.get('/', 
 function(req, res) {
@@ -102,22 +118,57 @@ function(req, res) {
 
 app.post('/login',
 function(req, res) {
-  var username = res.body.username;
-  var password = res.body.password;
-  new User({'username': username, 'password': password})
+  var username = req.body.username;
+  var password = req.body.password;
+  new User({'username': username})
     .fetch()
     .then(function(found) {
       if(found) {
-        req.session.regenerate(function(){
-          req.session.user = username;
-          res.redirect('/restricted');
-        });
+        if(found.checkPassword(password)) {
+          req.session.regenerate(function(){
+            req.session.user = username;
+            res.redirect('/index');
+          });
+        }
+        else {
+          console.log('Login credentials do not match; please input login credentials again.');
+          res.redirect('/login');
+        }
       }
       else {
-
+        console.log('Login not recognized; redirecting to account sign-up page.');
+        res.redirect('/signup');
       }
     });
+});
 
+app.get('/signup',
+function(req, res) {
+  res.render('signup');
+});
+
+app.post('/signup', 
+function(req, res) {
+  var username = req.body.username;
+  var password = req.body.password;
+  new User({'username': username})
+    .fetch()
+    .then(function(found) {
+      if (found) {
+        console.log('Username is already in use; please provide a different user name.');
+        res.redirect('/signup');
+      }
+      else {
+        Users.create({
+          'username': username,
+          'password': password
+        })
+        .then(function(newUser) {
+          console.log('New account for user "' + username + '" has been created.');
+          res.redirect('/login');
+        });
+      }
+    });
 });
 
 /************************************************************/
