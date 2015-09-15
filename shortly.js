@@ -51,7 +51,6 @@ app.use(function(req, res, next) {
     next();
   }
   else {
-    console.log('No session in memory.');
     req.session.error = "Access denied; redirecting to login page.";
     res.redirect('/login');
   }
@@ -78,7 +77,6 @@ function(req, res) {
 app.post('/links', 
 function(req, res) {
   var uri = req.body.url;
-
   if (!util.isValidUrl(uri)) {
     console.log('Not a valid url: ', uri);
     return res.send(404);
@@ -127,7 +125,7 @@ function(req, res) {
         if(found.checkPassword(password)) {
           req.session.regenerate(function(){
             req.session.user = username;
-            res.redirect('/index');
+            res.redirect('/');
           });
         }
         else {
@@ -136,8 +134,8 @@ function(req, res) {
         }
       }
       else {
-        console.log('Login not recognized; redirecting to account sign-up page.');
-        res.redirect('/signup');
+        console.log('Login not recognized; please re-enter login credentials.');
+        res.redirect('/login');
       }
     });
 });
@@ -164,8 +162,7 @@ function(req, res) {
           'password': password
         })
         .then(function(newUser) {
-          console.log('New account for user "' + username + '" has been created.');
-          res.redirect('/login');
+          res.redirect('/');
         });
       }
     });

@@ -13,13 +13,11 @@ var Link = require('../app/models/link');
 // Remove the 'x' from beforeEach block when working on
 // authentication tests.
 /************************************************************/
-var xbeforeEach = function(){};
 /************************************************************/
 
+describe('Shortly', function() {
 
-describe('', function() {
-
-  beforeEach(function() {
+  beforeEach(function(done) {
     // log out currently signed in user
     request('http://127.0.0.1:4568/logout', function(error, res, body) {});
 
@@ -40,10 +38,10 @@ describe('', function() {
       .del()
       .catch(function(error) {
         // uncomment when writing authentication tests
-        // throw {
-        //   type: 'DatabaseError',
-        //   message: 'Failed to create test setup data'
-        // };
+        throw {
+          type: 'DatabaseError',
+          message: 'Failed to create test setup data'
+        };
       });
 
     // delete user Phillip from db so it can be created later for the test
@@ -52,36 +50,34 @@ describe('', function() {
       .del()
       .catch(function(error) {
         // uncomment when writing authentication tests
-        // throw {
-        //   type: 'DatabaseError',
-        //   message: 'Failed to create test setup data'
-        // };
+        throw {
+          type: 'DatabaseError',
+          message: 'Failed to create test setup data'
+        };
       });
+
+    done();
+
   });
 
   describe('Link creation:', function(){
 
     var requestWithSession = request.defaults({jar: true});
 
-var beforeEach = function(){};
+    beforeEach(function(done) {
+      Users.create({'username': 'Phillip', 'password': 'Phillip'});
       // create a user that we can then log-in with
-      new User({
+      var loginOptions = {
+        'method': 'POST',
+        'uri': 'http://127.0.0.1:4568/login',
+        'json': {
           'username': 'Phillip',
           'password': 'Phillip'
-      }).save().then(function(){
-        var options = {
-          'method': 'POST',
-          'followAllRedirects': true,
-          'uri': 'http://127.0.0.1:4568/login',
-          'json': {
-            'username': 'Phillip',
-            'password': 'Phillip'
-          }
-        };
-        // login via form and save session info
-        requestWithSession(options, function(error, res, body) {
-          done();
-        });
+        }
+      };
+
+      requestWithSession(loginOptions, function(error, res, body) {
+        done();
       });
     });
 
@@ -144,10 +140,9 @@ var beforeEach = function(){};
               }
               expect(foundTitle).to.equal('Funny pictures of animals, funny dog pictures');
               done();
-            });
+          });
         });
       });
-
     }); // 'Shortening links'
 
     describe('With previously saved urls:', function(){
@@ -208,12 +203,10 @@ var beforeEach = function(){};
           done();
         });
       });
-
     }); // 'With previously saved urls'
-
   }); // 'Link creation'
 
-  xdescribe('Privileged Access:', function(){
+  describe('Privileged Access:', function(){
 
     it('Redirects to login page if a user tries to access the main page and is not signed in', function(done) {
       request('http://127.0.0.1:4568/', function(error, res, body) {
@@ -235,10 +228,9 @@ var beforeEach = function(){};
         done();
       });
     });
-
   }); // 'Priviledged Access'
 
-  xdescribe('Account Creation:', function(){
+  describe('Account Creation:', function(){
 
     it('Signup creates a user record', function(done) {
       var options = {
@@ -283,21 +275,19 @@ var beforeEach = function(){};
         done();
       });
     });
-
   }); // 'Account Creation'
 
-  xdescribe('Account Login:', function(){
+  describe('Account Login:', function(){
 
     var requestWithSession = request.defaults({jar: true});
 
     beforeEach(function(done){
-      new User({
+      Users.create({
           'username': 'Phillip',
           'password': 'Phillip'
-      }).save().then(function(){
-        done()
       });
-    })
+      done();
+    });
 
     it('Logs in existing users', function(done) {
       var options = {
@@ -330,7 +320,5 @@ var beforeEach = function(){};
         done();
       });
     });
-
   }); // 'Account Login'
-
 });
