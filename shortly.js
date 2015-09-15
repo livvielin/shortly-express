@@ -168,6 +168,12 @@ function(req, res) {
     });
 });
 
+app.get('/logout',
+function(req, res) {
+  req.session.destroy();
+  res.redirect('/');
+});
+
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
 // assume the route is a short code and try and handle it here.
