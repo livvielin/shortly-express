@@ -24,21 +24,6 @@ app.use(bodyParser.json());
 
 //Cookie parser
 app.use(cookieParser('test secret'));
-// app.use(function(req, res, next) {
-//   var cookie = req.cookies.shortly;
-//   if(cookie === undefined) {
-//     var randomNumber = Math.random().toFixed(10);
-//     randomNumber = randomNumber.substring(2, randomNumber.length);
-//     //The duration of the cookie is set below; null means cookie will only
-//     //expire when browser is closed; else it should be the number of seconds
-//     res.cookie('shortly', randomNumber, { maxAge: null, httpOnly: true });
-//     console.log('Cookie created successfully!');
-//   }
-//   else {
-//     console.log('Cookie already exists', cookie);
-//   }
-//   next();
-// });
 
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -47,13 +32,15 @@ app.use(express.static(__dirname + '/public'));
 //Session checking
 app.use(session());
 app.use(function(req, res, next) {
-  if ( (req.url === '/login' || req.url === '/signup') || req.session.user) {
-    next();
-  }
-  else {
-    req.session.error = "Access denied; redirecting to login page.";
-    res.redirect('/login');
-  }
+  Links.fetch().then(function(links) {
+    if ( (req.url === '/login' || req.url === '/signup') || req.session.user || links.hasShortUrl(req.url)) {
+      next();
+    }
+    else {
+      req.session.error = "Access denied; redirecting to login page.";
+      res.redirect('/login');
+    }
+  });
 });
 
 
