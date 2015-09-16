@@ -4,6 +4,7 @@ var partials = require('express-partials');
 var session = require('express-session');
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
+var request = require('request');
 
 
 var db = require('./app/config');
@@ -18,6 +19,11 @@ var app = express();
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 app.use(partials());
+
+//Github app credentials
+var appSecret = '87822e3920545707d6d314472a94679198b5ef6d';
+var appID = '3c30db9d7448bb46c0d1';
+
 // Parse JSON (uniform resource locators)
 app.use(bodyParser.json());
 
@@ -31,9 +37,19 @@ app.use(express.static(__dirname + '/public'));
 
 //Session checking
 app.use(session());
+
+var isPublicUrl = function(req) {
+  if (req.url.slice(0,6) === '/login' || req.url === '/signup')
+    return true;
+  else if(req.session.user)
+    return true;
+  else
+    return false;
+};
+
 app.use(function(req, res, next) {
   Links.fetch().then(function(links) {
-    if ( (req.url === '/login' || req.url === '/signup') || req.session.user || links.hasShortUrl(req.url)) {
+    if (isPublicUrl(req) || links.hasShortUrl(req.url)) {
       next();
     }
     else {
@@ -42,7 +58,6 @@ app.use(function(req, res, next) {
     }
   });
 });
-
 
 app.get('/', 
 function(req, res) {
@@ -95,6 +110,45 @@ function(req, res) {
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
+
+app.get('/login/auth',
+function(req, res) {
+  
+var code = req.url.slice(17);
+
+var options = {
+    port: 443,
+    path: '/',
+    method: 'POST'
+};
+
+var data = {
+  'client_id': appID,
+  'code': code,
+  'client_secret': appSecret};
+
+request(
+  { method: "POST",
+    uri: 'https://github.com/login/oauth/access_token',
+    port: 443,
+    path: '/',
+    json: {
+      client_id: appID,
+      code: code,
+      client_secret: appSecret}
+  }, 
+  
+  function (error, response, body) {
+    if(!body.error) {
+      console.log(code);
+      console.log(body);
+      req.session.regenerate( function() { 
+        req.session.user = 'gitHubAuthorized';
+        res.redirect('/');
+      });
+    }
+  });
+});
 
 app.get('/login',
 function(req, res) {
@@ -157,6 +211,10 @@ function(req, res) {
 
 app.get('/logout',
 function(req, res) {
+  if(req.username === 'gitHubAuthorized')
+    {
+
+    }
   req.session.destroy();
   res.redirect('/');
 });
