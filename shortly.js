@@ -21,8 +21,8 @@ app.set('view engine', 'ejs');
 app.use(partials());
 
 //Github app credentials
-var appSecret = '87822e3920545707d6d314472a94679198b5ef6d';
-var appID = '3c30db9d7448bb46c0d1';
+var appSecret = '{APP_SECRET}';
+var appID = '{APP_ID}';
 
 // Parse JSON (uniform resource locators)
 app.use(bodyParser.json());
